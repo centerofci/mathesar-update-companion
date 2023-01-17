@@ -54,35 +54,35 @@ function isMathesarServiceContainer (name, container) {
   return hasCorrectName && hasCorrectImage
 }
 
-async function getMathesarServiceContainer (name) () {
-  logInfo(`Finding ${name} container...`)
+async function getMathesarServiceContainer (upgradeId, name) () {
+  logInfo(upgradeId, `Finding ${name} container...`)
   const containers = await dk.listContainers({ all: true })
   const containerDesc = containers.find(c => isMathesarServiceContainer(name, c))
   if (!containerDesc) {
     throw new Error(`Could not find ${name} container.`)
   }
-  logInfo(`Found ${name} container (ID ${containerDesc.Id})`)
+  logInfo(upgradeId, `Found ${name} container (ID ${containerDesc.Id})`)
   const container = dk.getContainer(containerDesc.Id)
   return await container.inspect()
 }
 
-async function upgrade (name, version) {
-  logInfo('Connecting to Docker API...')
+async function upgrade (upgradeId, name, version) {
+  logInfo(upgradeId, 'Connecting to Docker API...')
   const dk = new Docker({ socketPath: '/var/run/docker.sock' })
 
-  const prevContainer = await getMathesarServiceContainer(name)
+  const prevContainer = await getMathesarServiceContainer(upgradeId, name)
 
   if (prevContainer.State.Status !== 'exited') {
-    logInfo('Attempting to stop container...')
+    logInfo(upgradeId, 'Attempting to stop container...')
     await prevContainer.stop()
   }
-  logInfo('Container is stopped.')
+  logInfo(upgradeId, 'Container is stopped.')
 
-  logInfo('Removing container...')
+  logInfo(upgradeId, 'Removing container...')
   await prevContainer.remove({ v: true })
-  logInfo('Container has been removed.')
+  logInfo(upgradeId, 'Container has been removed.')
 
-  logInfo('Pulling latest Mathesar image...')
+  logInfo(upgradeId, `Pulling latest Mathesar image with major version ${version}...`)
   await new Promise((resolve, reject) => {
     dk.pull(`${ghcrUrl}:${version}`, (err, stream) => {
       if (err) { return reject(err) }
@@ -96,7 +96,7 @@ async function upgrade (name, version) {
     })
   })
 
-  logInfo('Recreating container...')
+  logInfo(upgradeId, 'Recreating container...')
   const newContainer = await dk.createContainer({
     name: name,
     Image: `${ghcrUrl}:${version}`,
@@ -105,9 +105,15 @@ async function upgrade (name, version) {
     Hostname: name,
     HostConfig: prevContainerInfo.HostConfig
   })
-  logInfo('Starting container...')
+  logInfo(upgradeId, 'Starting container...')
   await newContainer.start()
-  logInfo(`Container ${newContainer.id} started successfully.`)
+  logInfo(upgradeId, `Container ${newContainer.id} started successfully.`)
+}
+
+// Chronologically sortable, for convenience
+function getUID () {
+  random_suffix = Math.floor(Math.random() * 100000)
+  return Date.now() + '-' + random_suffix
 }
 
 async function main () {
@@ -117,23 +123,25 @@ async function main () {
     return { ok: true }
   })
 
-  fastify.get('/progress', async (request, reply) => {
-    reply.send(getProgress())
+  fastify.get('/progress/:upgradeId?', async (request, reply) => {
+    upgradeId = request.params.upgradeId
+    progress = getProgress(upgradeId)
+    reply.send(progress)
   })
 
-  fastify.post('/upgrade/:version?', async (request, reply) => {
+  fastify.post('/start/:version?', async (request, reply) => {
+    upgradeId = getUID()
     try {
-      upgrade(
-        request.query.container || defaultMathesarServiceContainerName,
-        request.params.version || defaultMajorVersion
-        )
-      return { started: true }
+      name = request.query.container || defaultMathesarServiceContainerName
+      version = request.params.version || defaultMajorVersion
+      upgrade(upgradeId, name, version)
+      return { started: true, upgradeId }
     } catch (err) {
-      logError(err)
-      return { started: false, error: err.message}
+      logError(upgradeId, err.message)
+      return { started: false, error: err.message, upgradeId }
     }
   })
-  
+
   try {
     await fastify.listen({
       port: 80,
