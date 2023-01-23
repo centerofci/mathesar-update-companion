@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**
+
+- [Wiki.js Update Companion](#wikijs-update-companion)
+  - [Usage](#usage)
+  - [Technical Reference](#technical-reference)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Wiki.js Update Companion
 
 This docker image provides automated upgrade to latest Wiki.js versions from the Administration Area.
