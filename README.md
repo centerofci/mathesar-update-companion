@@ -3,9 +3,7 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
 
-- [Wiki.js Update Companion](#wikijs-update-companion)
-  - [Usage](#usage)
-  - [Technical Reference](#technical-reference)
+- [Technical Reference](#technical-reference)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
