@@ -2,7 +2,8 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
 
-- [Technical Reference](#technical-reference)
+- [Mathesar Update Companion](#mathesar-update-companion)
+  - [Technical Reference](#technical-reference)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
