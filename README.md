@@ -1,4 +1,13 @@
 # Mathesar Update Companion
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**
+
+- [Wiki.js Update Companion](#wikijs-update-companion)
+  - [Usage](#usage)
+  - [Technical Reference](#technical-reference)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 This docker image provides an HTTP API to trigger and track automated Mathesar updates. It's based on the [Wiki.js Update Companion](https://github.com/Requarks/wiki-update-companion).
 
