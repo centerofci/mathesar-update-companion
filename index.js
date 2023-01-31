@@ -45,7 +45,7 @@ function logError(upgradeId, message) {
   logProgressItem(upgradeId, type, message)
 }
 
-function isMathesarServiceContainer (name, container) {
+function isContainerToUpgrade (name, container) {
   hasCorrectName = container.Names.some(n => n === `/${name}` || n === name)
   hasCorrectImage = (
     container.Image.startsWith(ghcrUrl)
@@ -57,9 +57,9 @@ function isMathesarServiceContainer (name, container) {
 async function getMathesarServiceContainer (upgradeId, name) () {
   logInfo(upgradeId, `Finding ${name} container...`)
   const containers = await dk.listContainers({ all: true })
-  const containerDesc = containers.find(c => isMathesarServiceContainer(name, c))
+  const containerDesc = containers.find(c => isContainerToUpgrade(name, c))
   if (!containerDesc) {
-    throw new Error(`Could not find ${name} container.`)
+    throw new Error(`Could not find ${name} container (that would have a Mathesar image).`)
   }
   logInfo(upgradeId, `Found ${name} container (ID ${containerDesc.Id})`)
   const container = dk.getContainer(containerDesc.Id)
@@ -69,7 +69,6 @@ async function getMathesarServiceContainer (upgradeId, name) () {
 async function upgrade (upgradeId, name, version) {
   logInfo(upgradeId, 'Connecting to Docker API...')
   const dk = new Docker({ socketPath: '/var/run/docker.sock' })
-
   const prevContainer = await getMathesarServiceContainer(upgradeId, name)
 
   if (prevContainer.State.Status !== 'exited') {
@@ -78,13 +77,10 @@ async function upgrade (upgradeId, name, version) {
   }
   logInfo(upgradeId, 'Container is stopped.')
 
-  logInfo(upgradeId, 'Removing container...')
-  await prevContainer.remove({ v: true })
-  logInfo(upgradeId, 'Container has been removed.')
-
+  const newVersion = `${ghcrUrl}:${version}`
   logInfo(upgradeId, `Pulling latest Mathesar image with major version ${version}...`)
   await new Promise((resolve, reject) => {
-    dk.pull(`${ghcrUrl}:${version}`, (err, stream) => {
+    dk.pull(newVersion, (err, stream) => {
       if (err) { return reject(err) }
       dk.modem.followProgress(stream, (err) => {
         if (err) {
@@ -96,10 +92,14 @@ async function upgrade (upgradeId, name, version) {
     })
   })
 
+  logInfo(upgradeId, 'Removing container...')
+  await prevContainer.remove({ v: true })
+  logInfo(upgradeId, 'Container has been removed.')
+
   logInfo(upgradeId, 'Recreating container...')
   const newContainer = await dk.createContainer({
     name: name,
-    Image: `${ghcrUrl}:${version}`,
+    Image: newVersion,
     Env: prevContainerInfo.Config.Env,
     ExposedPorts: prevContainerInfo.Config.ExposedPorts,
     Hostname: name,
